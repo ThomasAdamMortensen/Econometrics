@@ -2,6 +2,8 @@ library(Ecdat)
 library(dynlm)
 library(stats)
 library(tseries)
+
+
 data("IncomeUK")
 df_inc = IncomeUK[,1]
 
@@ -75,9 +77,28 @@ jb
 # Part 2 
 library(readxl)
 library(forecast)
+library(greybox)
+setwd("~/R_projects/Econometrics 2B Applied")
 kpif = read_xlsx("2022_12_KPIF.xlsx" )
 kpif = kpif[-1,] # Careful to only run this once as we had a blank row
+names(kpif) = c("index", "kpif")
+
 kpif
 
+kpif_ts = ts(kpif, start = c(1987, 1), end = c(2022, 12), frequency = 12)[,-1]
+
+
+
+arima = auto.arima(kpif_ts)
+arima
+
+arima_call 
+arima_val
+
+auto_call
+auto_val
+
+# https://cran.r-project.org/web/packages/greybox/vignettes/ro.html 
+# Use this for this task
 
 
