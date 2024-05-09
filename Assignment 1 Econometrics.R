@@ -44,7 +44,8 @@ lj = list()
 for(i in 1:length(list_AR)){
   q <- floor(0.75*nobs(list_AR[[i]])^(1/3)) 
   df = length(list_AR[[i]]$coefficients)
-  lj[[i]] = LjungBox(list_AR[[i]]$residuals, lag = q, fitdf = df)
+  lj[[i]] = LjungBox(list_AR[[i]]$residuals, lag = q, fitdf = df) # wrong here as Nans are produced when fitdf(df) > lag(q), 
+  #even in example lab 3 this is reproducible and not local to here
 }
 lj # Independence tests for residuals seem highly stat sign on all reasonable 
 # levels for all but the 1st model which seems non-significant eg. not statistically diff from zero
