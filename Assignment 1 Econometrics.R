@@ -1,7 +1,7 @@
 library(dynlm)
 library(stats)
 library(tseries)
-
+library(portes)
 
 data("IncomeUK", package = "Ecdat")
 df_inc = IncomeUK[,1]
@@ -43,12 +43,8 @@ lj = list()
 
 for(i in 1:length(list_AR)){
   q <- floor(0.75*nobs(list_AR[[i]])^(1/3)) 
-  df = q - length(list_AR[[i]]$coefficients) # NOTE: Some degrees of freedom 
-  # will be negative, if a df > lag it produces Nans, we set df = q in that case
-  if(df < 0){
-    df = q
-  }
-  lj[[i]] = Box.test(list_AR[[i]]$residuals, type = "Ljung-Box", lag = q, fitdf = df)
+  df = length(list_AR[[i]]$coefficients)
+  lj[[i]] = LjungBox(list_AR[[i]]$residuals, lag = q, fitdf = df)
 }
 lj # Independence tests for residuals seem highly stat sign on all reasonable 
 # levels for all but the 1st model which seems non-significant eg. not statistically diff from zero
@@ -74,17 +70,22 @@ names(kpif) = c("index", "kpif")
 kpif
 
 kpif_ts = ts(kpif, start = c(1987, 1), end = c(2022, 12), frequency = 12)[,-1]
+kpif_ts = window(kpif_ts, start = c(2002, 12)) # subset for start at 2002
+
+ro_list = list()
+
+arima_call = "forecast::forecast(auto.arima(y=data),h=h)"
+arima_val = "mean"
+
+ar_call = "predict(arima(x=data,order=c(1,1,0)),n.ahead=h)" # is it ok to be diffed? error otherwise:  "non-stationary AR part from CSS"
+ar_val = "pred"
+for(i in c(1, 12, 24)){
+  ro_list = append(ro_list , ro(kpif_ts, h = i, origins = 2, ar_call, ar_val) ) #change origins to 216 when it works 
+  ro_list = append(ro_list , ro(kpif_ts, h = i, origins = 2, arima_call, arima_val) )
+}
+ro_list[c(seq(3, 18, 3))] # Look at preds for AR(1) for 20 origins x 3 forecast horizons
 
 
-
-arima = auto.arima(kpif_ts)
-arima
-
-arima_call 
-arima_val
-
-auto_call
-auto_val
 
 # https://cran.r-project.org/web/packages/greybox/vignettes/ro.html 
 # Use this for this task
