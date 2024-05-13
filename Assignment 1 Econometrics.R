@@ -73,16 +73,17 @@ kpif
 kpif_ts = ts(kpif, start = c(1987, 1), end = c(2022, 12), frequency = 12)[,-1]
 kpif_ts = window(kpif_ts, start = c(2002, 12)) # subset for start at 2002
 
-ro_list = list()
-
 arima_call = "forecast::forecast(auto.arima(y=data),h=h)"
 arima_val = "mean"
 
-ar_call = "predict(arima(x=data,order=c(1,1,0)),n.ahead=h)" # is it ok to be diffed? error otherwise:  "non-stationary AR part from CSS"
-ar_val = "pred"
+ar_call = "predict(arima(x=data,order=c(1,0,0), method = 'ML'),n.ahead=h)" # nondiffed it gets errors, only solveable by 
+#changing method to ML instead of CSS
+
+ro_list = list()
+
 for(i in c(1, 12, 24)){
   ro_list = append(ro_list , ro(kpif_ts, h = i, origins = 2, ar_call, ar_val) ) #change origins to 216 when it works 
-  ro_list = append(ro_list , ro(kpif_ts, h = i, origins = 2, arima_call, arima_val) )
+  ro_list = append(ro_list , ro(kpif_ts, h = i, origins = 2, arima_call, arima_val) ) # origin >190 leads to convergence problems
 }
 ro_list[c(seq(3, 18, 3))] # Look at preds for AR(1) for 20 origins x 3 forecast horizons
 
