@@ -3,7 +3,7 @@ library(stats)
 library(tseries)
 library(portes)
 require(lmtest)
-require(sandwich) 
+require(sandwich)
 library(readxl)
 library(forecast)
 
@@ -12,7 +12,7 @@ df_inc = IncomeUK[,1]
 
 df_diff = diff(df_inc)
 
-# Function to create a list of i models using to using lag i. 
+# Function to create a list of i models using to using lag i.
 # Meaning we will have model 1 using lag 1, model 2 using lag 2 etc.
 
 AR_models = function(df, lags, start, freq){
@@ -47,36 +47,35 @@ for(i in 1:length(list_AR)){
 lj = list()
 
 for(i in 1:length(list_AR)){
-  q <- floor(0.75*nobs(list_AR[[i]])^(1/3)) 
+  q <- floor(0.75*nobs(list_AR[[i]])^(1/3))
   df = length(list_AR[[i]]$coefficients)
   if(q <= df){
     q = q + df
   }
-  lj[[paste0("AR", i)]] = LjungBox(list_AR[[i]]$residuals, lag = q, fitdf = df) 
+  lj[[paste0("AR", i)]] = LjungBox(list_AR[[i]]$residuals, lag = q, fitdf = df)
 }
 
-lj 
+lj
 
-jb 
-# Ljbox tests shows only the 1st three models have significantly independent errors
-# JB tests show that only the 1st model has significantly gaussian errors
-# This can be ok though as with a large enough sample size, the estimation functions for our coefficients, approach a normal dist.
-# The AR(4) model had the lowest AIC but violates independent errors according to our test,
-# We might choose to use either our AR(2) model if we deem violating gaussian errors is worth the gain in forecast accuracy.
-# Lastly we might choose AR(1) if we believe gaussian errors is more important than some gain in accuracy.
+jb
+# As the AR(1:3) models residuals reject the null of no auto correlation,
+# we can only consider AR(4) and AR(5), as IID is vital.
+# All models residuals are considered normal by the test on any reasonable significance level, except for AR(1).
+# This leaves us with AR 4:5 that fulfill our assumptions according to our tests.
+# We choose then by lowest AIC, which results in choosing AR(4).
 
 ###########################################################################
 
-# Part 2 
+# Part 2
 
 setwd("~/R_projects/Econometrics 2B Applied") # Set WD to where the excel file is located
-kpif = read_xlsx("2022_12_KPIF.xlsx" )
-kpif = kpif[-1,] # Careful to only run this once as we had a blank row
+kpif = read_xlsx("2022_12_KPIF_rates.xlsx" )
+kpif = na.exclude(kpif)
 names(kpif) = c("index", "kpif")
 
 kpif
 
-kpif_ts = ts(kpif, start = c(1987, 1), end = c(2022, 12), frequency = 12)[,-1]
+kpif_ts = ts(kpif, start = c(1988, 1), end = c(2022, 12), frequency = 12)[,-1]
 
 
 
@@ -94,10 +93,10 @@ n_origins <- length(window(kpif_ts, start = origin_1)) - hmax # total number of 
 ARIMA_models <- vector("list", n_origins)
 ARIMA_forecasts <- vector("list", n_origins)
 
-# We then create 24 time series starting at the first forecast origin. 
+# We then create 24 time series starting at the first forecast origin.
 # We will store our forecasts for horizons h = 1:24 in these series.
 
-ARIMA_results <- ts(matrix(NA, nrow = n_origins, ncol = hmax), 
+ARIMA_results <- ts(matrix(NA, nrow = n_origins, ncol = hmax),
                     start = origin_1,
                     frequency = frequency(kpif_ts))
 
@@ -105,7 +104,7 @@ ARIMA_results <- ts(matrix(NA, nrow = n_origins, ncol = hmax),
 
 colnames(ARIMA_results) <- paste0("h = ", 1:hmax)
 
-# We now do loop from 1 to 36 and do the following at each step:
+# We now do loop from 1 to 217 and do the following at each step:
 # 1) Define the origin which starts at 2002 and adds 1/12 at each step
 # 2) Subset the data with the window() function
 # 3) Use the auto.arima function on the subset of data in 2)
@@ -130,7 +129,7 @@ rm(i,origin,data,m,f) # the loop will leave a bunch of objects in the global env
 AR1_models <- vector("list", n_origins)
 AR1_forecasts <- vector("list", n_origins)
 
-AR1_results <- ts(matrix(NA, nrow = n_origins, ncol = hmax), 
+AR1_results <- ts(matrix(NA, nrow = n_origins, ncol = hmax),
                   start = origin_1,
                   frequency = frequency(kpif_ts))
 colnames(AR1_results) <- paste0("h = ", 1:hmax)
@@ -150,7 +149,7 @@ rm(i,origin,data,m,f)
 
 # Test for bias
 
-# First we create four time series starting at the first forecast origin which 
+# First we create four time series starting at the first forecast origin which
 # contains the actual inflation rate for the forecasted horizons.
 
 outcome <- ts(data = matrix(NA, nrow = n_origins, ncol = hmax),
@@ -204,15 +203,11 @@ rm(h)
 
 bias_pvals
 
-# All auto.arima models are non significant on any reasonable level, while
-# most AR() models are. This means that all auto arima models residuals aren't 
-# biased according to this test as they have mean 0, the AR() models that are significant
-# are biased though according to this test. This means using those AR() models you 
-# will on average over or underestimate during forecasting.
-
-
-# The null no bias (i.e. expected forecast error = 0) cannot be rejected at any
-# conventional significance level except the AR(1) forecast for horizon h = 1.
+# All models are not rejecting our null hypothesis for any value of h, if one had 
+# a high significance level of 10% one might conclude that AR(1) rejects the null.
+# Rejecting the null here means that the mean of errors or expected forecast errors
+# are not zero according to the tests. 
+# This would mean those models consistently over or underestimate the true values.
 
 ####################################################################################
 
@@ -242,11 +237,7 @@ rm(h,test)
 
 DM_pvals
 DM_pvals[DM_pvals$pval <= 5e-02,] # Using common significance level 0.05
-# h = 1:4 are the ones the test show stat significantly difference in average forecast errors between models
-# The rest of the models forecast errors the test tells us is not different on average.
-# One could interpret this as the AR and ARIMA models forecasting only the first few 
-# timepoints(h <= 4) to have different average forecast errors, while in the h > 4 case they are on average the same.
-# According to the tasks stated horizons of 1,12 and 24 we would say there is a 
-# statistical diff in forecast errors only for horizon h = 1.
-# One could interpret this as for h = 1 we would expect a difference in model accuracy, 
-# but not for h = 12 and h = 24.
+# No value of h with statistically significant difference in average forecast errors between models.
+# We interpret this as our models forecasts being off on average the same amount.
+# If one had a higher significance level one could reject the null for h = 1 only.
+# This would mean we have a statistically significant difference between models forecast errors for h = 1
