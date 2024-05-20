@@ -22,3 +22,4 @@
 
 # Use latex to bind it all together in overleaf preferably.
 
+# Good book for VARS with examples https://www.econometrics-with-r.org/16.1-vector-autoregressions.html
