@@ -3,17 +3,34 @@ library(urca)
 library(vars)
 library(sandwich)
 
+rm(list = ls())
 data(ChickEgg, package = "lmtest")
 
 df = ChickEgg
 df_diff = diff(df)
 
-summary(ur.df(df[,1], type = "none", lags = 0))
-summary(ur.df(df[,2], type = "none", lags = 0))
+plot(df)
+plot(df_diff) # Both seem to be visually I(1) but needs testing!
 
-summary(ur.df(df_diff[,1], type = "none", lags = 0)) 
-summary(ur.df(df_diff[,2], type = "none", lags = 0))
-# Seems to be I(1) as we reject unit root when differenced once but not at level.
+summary(ur.df(df[,1], type = "none", selectlags = "AIC"))
+summary(ur.df(df[,1], type = "drift", selectlags = "AIC"))
+summary(ur.df(df[,1], type = "trend", selectlags = "AIC"))
+
+summary(ur.df(df[,2], type = "none", selectlags = "AIC"))
+summary(ur.df(df[,2], type = "drift", selectlags = "AIC"))
+summary(ur.df(df[,2], type = "trend", selectlags = "AIC"))
+
+
+summary(ur.df(df_diff[,1], type = "none", selectlags = "AIC"))
+summary(ur.df(df_diff[,1], type = "drift", selectlags = "AIC"))
+summary(ur.df(df_diff[,1], type = "trend", selectlags = "AIC"))
+
+summary(ur.df(df_diff[,2], type = "none", selectlags = "AIC"))
+summary(ur.df(df_diff[,2], type = "drift", selectlags = "AIC"))
+summary(ur.df(df_diff[,2], type = "trend", selectlags = "AIC"))
+
+# Seems to be I(1) as we reject unit root when differenced once but not at level 
+# no matter if we have a trend or intercept at a 5% significance threshold for both time series.
 
 
 coint = dynlm(chicken ~ egg, data = df)
@@ -29,8 +46,8 @@ summary(ur.df(coint$residuals, type = "drift", selectlags = "AIC"))
 # 3 regressors: -3.84 # -4.16 # -4.73
 # 4 regressors: -4.20 # -4.49 # -5.07
 
-# As we can't reject null of unit root we seem to not have cointegration which 
-# means we can use VAR instead of VECM.
+# As we can't reject null of unit root for our residuals 
+# we seem to not have cointegration which means we can use VAR instead of VECM.
 
 VARselect(df_diff, type = "const") # allow for a constant
 
@@ -49,7 +66,7 @@ Granger_chicken_egg <- causality(VAR, cause = "chicken", vcov. = sandwich::vcovH
 
 Granger_egg_chicken <- causality(VAR, cause = "egg", vcov. = sandwich::vcovHC(VAR))
 
-Granger_chicken_egg$Granger # null not reject, no evidence of chicken granger causing egg
+Granger_chicken_egg$Granger # null not rejected, no evidence of chicken granger causing egg
 Granger_egg_chicken$Granger # Rejected, egg granger causes chicken
 
 # We can conclude the egg came before the chicken!
