@@ -22,3 +22,17 @@
 
 # Use latex to bind it all together in overleaf preferably.
 
+# Konjunkturinstitutet, BNP GAP: https://prognos.konj.se/PxWeb/pxweb/sv/SenastePrognosen/SenastePrognosen__f24_resursutnyttjande/F2404.px/table/tableViewLayout2/?rxid=76600014-4460-47f5-8c63-680654f2935d
+
+setwd("~/R_projects/Econometrics 2B Applied/Term paper")
+
+rm(list = ls())
+
+df = read.csv("BNP_gap_1981Q1-2020Q4.csv", skip = 1, sep = ";", col.names = c("value","index","BNP_gap"))[,3]
+df$unemploy_perc = read.csv("16-64_Unemployed1981Q1-2020Q4.csv", skip = 1, sep = ",", header = FALSE)[,4]
+
+plot(df[,-1]) # seems to have an inverse relationship as expected!
+cor(df[,-1]) # Negative correlation as expected
+
+
+
